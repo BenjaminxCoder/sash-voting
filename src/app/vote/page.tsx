@@ -36,7 +36,6 @@ const participants = [
 
 export default function VotePage() {
   const [votes, setVotes] = useState<Record<string, string>>({});
-
   const [hasVoted, setHasVoted] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -46,7 +45,13 @@ export default function VotePage() {
         }
     }, []);
 
-  const handleVote = async (category: string, name: string) => {
+  const handleSelect = (category: string, name: string) => {
+    // Only update preview — no save here anymore
+    setVotes((prev) => ({ ...prev, [category]: name }));
+  };
+
+  const handleSubmit = async (category: string) => {
+    const name = votes[category];
     if (!name) return;
 
     if (hasVoted[category]) {
@@ -54,28 +59,34 @@ export default function VotePage() {
       return;
     }
 
-    setVotes((prev) => ({ ...prev, [category]: name }));
-
     try {
-        const { error } = await supabase
-            .from('votes')
-            .insert({
-                category,
-                voted_for: name,
+      const { error } = await supabase
+        .from('votes')
+        .insert({
+          category,
+          voted_for: name,
         });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        setHasVoted((prev) => {
+      // Mark as voted
+      setHasVoted((prev) => {
         const updated = { ...prev, [category]: true };
         localStorage.setItem('sashVotes', JSON.stringify(updated));
         return updated;
       });
 
-      alert(`Your vote for ${name} in "${category}" was saved! 🏆`);
+      alert(`Your vote for ${name} in "${category}" was successfully saved! 🏆`);
+
+      // Clear the selection after vote (looks cleaner)
+      setVotes((prev) => {
+        const updated = { ...prev };
+        delete updated[category];
+        return updated;
+      });
     } catch (err) {
       console.error('Vote failed:', err);
-      alert('Something went wrong — try again!');
+      alert('Something went wrong — please try again!');
     }
   };
 
@@ -86,57 +97,64 @@ export default function VotePage() {
       </h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-        {categories.map((cat) => (
-          <div
-            key={cat.title}
-            className="relative bg-black/40 backdrop-blur-lg rounded-2xl overflow-hidden shadow-2xl border border-white/10 hover:border-purple-400/50 transition-all duration-300 flex flex-col h-[520px] md:h-[580px]"
-          >
-            <div className="flex-1 relative">
-              <img
-                src={cat.gifUrl}
-                alt={`${cat.title} theme animation`}
-                className="absolute inset-0 w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.src = `https://via.placeholder.com/400x300?text=${encodeURIComponent(cat.title)}`;
-                }}
-              />
-            </div>
+        {categories.map((cat) => {
+          const selectedName = votes[cat.title];
+          const alreadyVoted = hasVoted[cat.title];
 
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-6 pt-16">
-              <h2 className="text-2xl md:text-3xl font-bold mb-4 text-center drop-shadow-lg">
-                {cat.title} {cat.emoji}
-              </h2>
+          return (
+            <div
+              key={cat.title}
+              className="relative bg-black/40 backdrop-blur-lg rounded-2xl overflow-hidden shadow-2xl border border-white/10 hover:border-purple-400/50 transition-all duration-300 flex flex-col h-[520px] md:h-[580px]"
+            >
+              {/* GIF */}
+              <div className="flex-1 relative">
+                <img
+                  src={cat.gifUrl}
+                  alt={`${cat.title} theme animation`}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = `https://via.placeholder.com/400x300?text=${encodeURIComponent(cat.title)}`;
+                  }}
+                />
+              </div>
 
-              <select
-                className="w-full p-4 bg-white/15 border border-white/30 rounded-xl text-white text-lg focus:outline-none focus:ring-2 focus:ring-purple-500 backdrop-blur-sm appearance-none"
-                value={votes[cat.title] || ""}
-                onChange={(e) => handleVote(cat.title, e.target.value)}
-                disabled={hasVoted[cat.title]}
-              >
-                <option value="" disabled className="text-gray-400 bg-black">
-                  {hasVoted[cat.title] ? "You already voted!" : "Choose your winner..."}
-                </option>
-                {participants.map((name) => (
-                  <option key={name} value={name} className="text-black bg-white">
-                    {name}
+              {/* Controls */}
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-6 pt-16">
+                <h2 className="text-2xl md:text-3xl font-bold mb-4 text-center drop-shadow-lg">
+                  {cat.title} {cat.emoji}
+                </h2>
+
+                <select
+                  className="w-full p-4 bg-white/15 border border-white/30 rounded-xl text-white text-lg focus:outline-none focus:ring-2 focus:ring-purple-500 backdrop-blur-sm appearance-none"
+                  value={selectedName || ""}
+                  onChange={(e) => handleSelect(cat.title, e.target.value)}
+                  disabled={alreadyVoted}
+                >
+                  <option value="" disabled className="text-gray-400 bg-black">
+                    {alreadyVoted ? "You already voted!" : "Choose your winner..."}
                   </option>
-                ))}
-              </select>
+                  {participants.map((name) => (
+                    <option key={name} value={name} className="text-black bg-white">
+                      {name}
+                    </option>
+                  ))}
+                </select>
 
-              <button
-                className="mt-5 w-full bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-bold py-3 px-6 rounded-xl transition transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
-                disabled={hasVoted[cat.title] || !votes[cat.title]}
-                onClick={() => {
-                  if (votes[cat.title]) {
-                    alert("Vote already saved! ✨");
-                  }
-                }}
-              >
-                {hasVoted[cat.title] ? "Already Voted" : "Cast Your Vote"}
-              </button>
+                <button
+                  className="mt-5 w-full bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-bold py-3 px-6 rounded-xl transition transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
+                  disabled={alreadyVoted || !selectedName}
+                  onClick={() => handleSubmit(cat.title)}
+                >
+                  {alreadyVoted
+                    ? "Already Voted"
+                    : selectedName
+                    ? `Cast Vote for ${selectedName}`
+                    : "Cast Your Vote"}
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
