@@ -28,10 +28,11 @@ const categories = [
 ];
 
 const participants = [
-  "Nicole", "Tim", "Winnie the pooh", "PSA 10 Char - izard", "Lian", "my name is Jeff", "Jess ka-zhu", "PGA Tyler Woods",
-  "A-Aliya-h", "Ashley aka Certified Yapper", "Dindi ", "Joey", "Psalm 28:7",
-  "Jewel", "NYO", "LEO", "Amee", "Sara", "Sean", "Zephren", "Anthony",
-  "Bartholomew Van Franklin The Third"
+  "Nicole", "Tim-my Turner", "Winnie the pooh", "PSA 10 Char - izard", "Lian", 
+  "my name is Jeff or Lil Jeff", "Jess ka-zhu", "PGA Tyler Woods",
+  "A-Aliya-h", "Ashley aka Certified Yapper", "Dindi", "Joey ", "Psalm 28:7",
+  "Jewel", "NYO", "LEO", "Amee", "Sara", "Luke (Luka Dončić)", "Sean", "Zephren", "Anthony",
+  "Bartholomew Van Franklin The Third" 
 ];
 
 export default function VotePage() {
